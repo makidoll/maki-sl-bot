@@ -39,7 +39,7 @@ public class MakiSLBot
         VoiceSession? session = sender as VoiceSession;
         
         voiceGateway.MicMute = false;
-        voiceGateway.MicLevel = 35;
+        voiceGateway.MicLevel = 40;
 
         voiceGateway.SpkrMute = true;
         voiceGateway.SpkrLevel = 0;
@@ -137,25 +137,10 @@ public class MakiSLBot
         {
             Console.WriteLine(e.FromName + ": " + e.Message);
           
-            if (e.Message == "/maki")
+            if (e.Message == "/comehere")
             {
                 client.Self.Chat("HELLO I AM FOX CAKE POP BOT", 0, ChatType.Normal);
-                
-                
-                
                 WalkTowards(e.Position);
-            }
-            else if (e.Message.StartsWith("/play"))
-            {
-                var groupHandle = e.Message.Split(' ')[1];
-                var path = e.Message.Split(' ')[2];
-                Console.WriteLine(groupHandle +  " " + path);
-                Console.WriteLine(voiceGateway.Request(
-                    "SessionGroup.ControlPlayback.1",
-                    "<SessionGroupHandle>" + groupHandle + "</SessionGroupHandle>" +
-                    "<RecordingControlType>Start</RecordingControlType>" +
-                    "<Filename>" + path + "</Filename>"
-                ));
             }
             else if (e.Message.StartsWith("/tts"))
             {

@@ -135,24 +135,30 @@ public class PulseAudio
 
     public void TextToSpeech(string voice, string message)
     {
-        var thread = new Thread(delegate()
+        Task.Run(async () =>
         {
             var audioFileName = Path.GetTempFileName();
 
-            var sayServer = "https://say.cutelab.space";
+            const string sayServer = "https://say.cutelab.space";
             var audioUrl = new Uri(
                 $"{sayServer}/sound.wav?voice={Uri.EscapeDataString(voice)}&text={Uri.EscapeDataString(message)}"
             );
 
-            Console.WriteLine(audioUrl);
-            var client = new WebClient();
-            client.DownloadFile(audioUrl, audioFileName);
+            var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync(audioUrl);
+            response.EnsureSuccessStatusCode();
 
-            Process.Start("paplay", $"-s tcp:127.0.0.1:{pulseAudioPort} {audioFileName}");
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            await File.WriteAllBytesAsync(audioFileName, bytes);
+
+            var process = Process.Start(
+                "paplay",
+                $"-s tcp:127.0.0.1:{pulseAudioPort} {audioFileName}"
+            );
             
-            // remove tmp file
-            Console.WriteLine(audioFileName);
+            await process.WaitForExitAsync();
+            
+            File.Delete(audioFileName);
         });
-        thread.Start();
     }
 }
