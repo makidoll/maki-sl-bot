@@ -8,8 +8,6 @@ namespace MakiSLBot;
 
 public class MakiSLBot
 {
-    private Config config = Config.Get();
-    
     private GridClient client;
     private VoiceGateway voiceGateway;
     private PulseAudio pulseAudio;
@@ -69,13 +67,14 @@ public class MakiSLBot
         client.Self.ChatFromSimulator += ChatFromSimulator;
         
         client.Network.EventQueueRunning += ClientOnEventQueueRunning;
-        
-        var startLocation = NetworkManager.StartLocation(
-            config.spawnSim, config.spawnX, config.spawnY, config.spawnZ
-        );
+
+        var spawn = (Config.Get("SPAWN") ?? "").Split(' ');
+        var startLocation = spawn.Length >= 4 ? 
+            NetworkManager.StartLocation(spawn[0], int.Parse(spawn[1]), int.Parse(spawn[2]), int.Parse(spawn[3])) : 
+            NetworkManager.StartLocation("Helios", 0, 0, 0); 
         
         if (!client.Network.Login(
-            config.username, "Resident", config.password,
+            Config.Get("USERNAME"), "Resident", Config.Get("PASSWORD"),
             "ItsDotNetAlright", startLocation, "maki.cafe")
         )
         {
@@ -85,15 +84,24 @@ public class MakiSLBot
         Console.WriteLine("Logged in: " + client.Network.LoginMessage);
 
         Console.WriteLine("Starting voice gateway");
+
+        var slVoiceDir = Config.Get("SL_VOICE_DIR");
+        if (slVoiceDir == null)
+        {
+            Console.WriteLine("SL_VOICE_DIR not provided, voice won't start");
+        }
+        else
+        {
+            pulseAudio = new PulseAudio(slVoiceDir);
         
-        pulseAudio = new PulseAudio(config.slVoiceDir);
+            voiceGateway = new VoiceGateway(client);
+            voiceGateway.OnSessionCreate += VoiceGatewayOnSessionCreate;
+            voiceGateway.OnSessionRemove += VoiceGatewayOnSessionRemove;
+            voiceGateway.OnAuxGetCaptureDevicesResponse += VoiceGatewayOnAuxGetCaptureDevicesResponse;
+            voiceGateway.OnAuxGetRenderDevicesResponse += VoiceGatewayOnAuxGetRenderDevicesResponse;
+            voiceGateway.Start();
+        }
         
-        voiceGateway = new VoiceGateway(client);
-        voiceGateway.OnSessionCreate += VoiceGatewayOnSessionCreate;
-        voiceGateway.OnSessionRemove += VoiceGatewayOnSessionRemove;
-        voiceGateway.OnAuxGetCaptureDevicesResponse += VoiceGatewayOnAuxGetCaptureDevicesResponse;
-        voiceGateway.OnAuxGetRenderDevicesResponse += VoiceGatewayOnAuxGetRenderDevicesResponse;
-        voiceGateway.Start();
     }
 
     public void Cleanup()

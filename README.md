@@ -26,14 +26,12 @@ sudo apt-get install pulseaudio:i386 pulseaudio-utils:i386
 sudo apt-get install net-tools 
 ```
 
-Write a `config.json` file next to the executable including:
+Write a `.env` file next to the executable including:
 
-```json
-{
-  "username": "",
-  "password": "",
-  "spawn": "name x y z",
-  "slVoiceDir": ""
-}
+```env
+USERNAME=
+PASSWORD=
+SPAWN=name x y z
+SL_VOICE_DIR=
 ```
 
