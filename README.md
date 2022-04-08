@@ -10,29 +10,23 @@ It'll build the first time. If you want to manually rebuild run `docker-compose 
 
 ## Building
 
+Make sure you're working in WSL or you won't be able to use PulseAudio.
+
 Build using `dotnet build` and find exe in `bin/Debug/net6.0/MakiSLBot`
 
-Download Firestorm for Linux and copy these files to its own directory:
+Copy these files your Windows viewer installation to its own directory:
 
 ```
-bin/SLVoice
-lib/libortp.so
-lib/libsndfile.so.1
-lib/libvivoxoal.so.1
-lib/libvivoxplatform.so
-lib/libvivoxsdk.so
+SLVoice.exe
+ortp_x64.dll
+vivoxsdk_x64.dll
 ```
 
-Because SLVoice is 32 bit, you'll need to install some packages on Ubuntu:
+Install these packages on Ubuntu:
 
 ```bash
-sudo dpkg --add-architecture i386
 sudo apt-get update -y
-sudo apt-get install libc6:i386 libstdc++6:i386 zlib1g:i386 libidn11:i386 libuuid1:i386
-# unfortunately... but its okay when its dockerized
-sudo apt-get install pulseaudio:i386 pulseaudio-utils:i386
-# ifconfig is apparently needed somewhere
-sudo apt-get install net-tools 
+sudo apt-get install wine pulseaudio pulseaudio-utils net-tools
 ```
 
 Write a `.env` file next to the executable including:
@@ -44,3 +38,4 @@ SPAWN=name x y z
 SL_VOICE_DIR=
 ```
 
+You might want to run `killall pulseaudio` every once in a while if it doesn't clean up properly.

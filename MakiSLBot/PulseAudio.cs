@@ -49,9 +49,9 @@ public class PulseAudio
         {
             "#!/bin/sh",
             "# THIS FILE WAS AUTO GENERATED AT RUNTIME",
+            "export WINEDEBUG=-all",
             $"export PULSE_SERVER=tcp:127.0.0.1:{pulseAudioPort}",
-            $"export LD_LIBRARY_PATH={slVoiceDir.Replace(" ", "\\ ")}",
-            $"exec /usr/bin/padsp {Path.Join(slVoiceDir, "SLVoice").Replace(" ", "\\ ")} \"$@\"\n"
+            $"exec /usr/bin/padsp wine64 {Path.Join(slVoiceDir, "SLVoice.exe").Replace(" ", "\\ ")} \"$@\"\n"
         };
         
         File.WriteAllText(slVoiceWrapperPath, string.Join('\n', shFile));
@@ -72,8 +72,8 @@ public class PulseAudio
                 {
                     "-n", // dont use default config
                     "--exit-idle-time=-1", // dont close on idle
-                    // pactl list reports SLVoice uses s16le 1ch 32000Hz
-                    "-L \"module-null-sink sink_name=auto_null format=s16le channels=1 rate=32000\"",
+                    // pactl list reports SLVoice.exe uses float32le 1ch 32000Hz
+                    "-L \"module-null-sink sink_name=auto_null format=float32le channels=1 rate=32000\"",
                     $"-L \"module-native-protocol-tcp listen=127.0.0.1 port={pulseAudioPort}\"" // open tcp server
                 };
 
