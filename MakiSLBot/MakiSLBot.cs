@@ -8,9 +8,9 @@ namespace MakiSLBot;
 
 public class MakiSLBot
 {
-    private GridClient client;
-    private VoiceGateway voiceGateway;
-    private PulseAudio pulseAudio;
+    private readonly GridClient client;
+    private readonly VoiceGateway voiceGateway;
+    private readonly PulseAudio pulseAudio;
     
     private void VoiceGatewayOnAuxGetCaptureDevicesResponse(object? sender, VoiceGateway.VoiceDevicesEventArgs e)
     {
