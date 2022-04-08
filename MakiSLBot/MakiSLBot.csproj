@@ -5,6 +5,10 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <!-- this breaks dirNextToExe variables which libremetaverse uses -->
+        <!-- <PublishSingleFile>true</PublishSingleFile> --> 
+        <PublishReadyToRun>true</PublishReadyToRun>
+        <PublishTrimmed>true</PublishTrimmed>
     </PropertyGroup>
 
     <ItemGroup>

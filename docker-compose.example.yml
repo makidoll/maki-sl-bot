@@ -1,0 +1,9 @@
+﻿version: "3.8"
+services:
+  maki-sl-bot:
+    build: .
+    restart: always
+    environment:
+      - USERNAME=
+      - PASSWORD=
+      - SPAWN=name x y z
