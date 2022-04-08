@@ -39,7 +39,7 @@ public class MakiSLBot
         VoiceSession? session = sender as VoiceSession;
         
         voiceGateway.MicMute = false;
-        voiceGateway.MicLevel = 40;
+        voiceGateway.MicLevel = 50;
 
         voiceGateway.SpkrMute = true;
         voiceGateway.SpkrLevel = 0;
@@ -107,8 +107,8 @@ public class MakiSLBot
     public void Cleanup()
     {
         Console.WriteLine("Shutting down and cleaning up...");
-        try { client.Network.Logout(); } catch (Exception) {}
         try { voiceGateway.Stop(); } catch (Exception) {}
+        try { client.Network.Logout(); } catch (Exception) {}
         try { pulseAudio.Cleanup(); } catch (Exception) {}
     }
 
@@ -136,16 +136,23 @@ public class MakiSLBot
         if (e.AudibleLevel == ChatAudibleLevel.Fully && e.Type == ChatType.Normal)
         {
             Console.WriteLine(e.FromName + ": " + e.Message);
+
+            var msgTrimmed = e.Message.Trim();
           
-            if (e.Message == "/comehere")
+            if (msgTrimmed == "/comehere")
             {
-                client.Self.Chat("HELLO I AM FOX CAKE POP BOT", 0, ChatType.Normal);
+                client.Self.Chat("yay im coming", 0, ChatType.Normal);
                 WalkTowards(e.Position);
             }
-            else if (e.Message.StartsWith("/tts"))
+            else if (msgTrimmed.StartsWith("/tts"))
             {
-                var message = Regex.Replace(e.Message, @"^/tts ?", "");
+                var message = Regex.Replace(msgTrimmed, @"^/tts ?", "");
                 pulseAudio.TextToSpeech("kathy", message);
+            }
+            else if (msgTrimmed.StartsWith("/play"))
+            {
+                var audioFilePath = Regex.Replace(msgTrimmed, @"^/play ?", "");
+                pulseAudio.PlayWavAudioFile(audioFilePath);
             }
         }
     }

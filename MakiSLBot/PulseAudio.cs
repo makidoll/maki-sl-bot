@@ -13,7 +13,7 @@ public class PulseAudio
     private ManualResetEvent pulseAudioLoopSignal = new ManualResetEvent(false);
     private Process pulseAudioProcess;
 
-    public static int GetAvailablePort()
+    private static int GetAvailablePort()
     {
         int port;
         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -72,16 +72,17 @@ public class PulseAudio
                 {
                     "-n", // dont use default config
                     "--exit-idle-time=-1", // dont close on idle
-                    "-L \"module-always-sink\"", // will make dummy sink and source
-                    "-L \"module-suspend-on-idle\"", // suspend sink and source on idle, might help with performance
+                    // pactl list reports SLVoice uses s16le 1ch 32000Hz
+                    "-L \"module-null-sink sink_name=auto_null format=s16le channels=1 rate=32000\"",
                     $"-L \"module-native-protocol-tcp listen=127.0.0.1 port={pulseAudioPort}\"" // open tcp server
                 };
 
                 pulseAudioProcess = new Process();
                 pulseAudioProcess.StartInfo.FileName = "pulseaudio";
                 pulseAudioProcess.StartInfo.Arguments = string.Join(' ', args);
-                pulseAudioProcess.StartInfo.RedirectStandardOutput = true;
-                pulseAudioProcess.StartInfo.RedirectStandardError = true;
+                // hides messages to console
+                // pulseAudioProcess.StartInfo.RedirectStandardOutput = true;
+                // pulseAudioProcess.StartInfo.RedirectStandardError = true;
 
                 var ok = pulseAudioProcess.Start();
 
@@ -126,18 +127,23 @@ public class PulseAudio
     public void Cleanup()
     {
         StopPulseAudio();
+        if (File.Exists(slVoiceWrapperPath)) File.Delete(slVoiceWrapperPath);
+    }
 
-        if (File.Exists(slVoiceWrapperPath))
-        {
-            File.Delete(slVoiceWrapperPath);
-        }
+    public async Task PlayWavAudioFile(string audioFilePath)
+    {
+        var process = Process.Start(
+            "paplay",
+            $"-s tcp:127.0.0.1:{pulseAudioPort} {audioFilePath}"
+        );
+        await process.WaitForExitAsync();
     }
 
     public void TextToSpeech(string voice, string message)
     {
         Task.Run(async () =>
         {
-            var audioFileName = Path.GetTempFileName();
+            var audioFilePath = Path.GetTempFileName();
 
             const string sayServer = "https://say.cutelab.space";
             var audioUrl = new Uri(
@@ -149,16 +155,11 @@ public class PulseAudio
             response.EnsureSuccessStatusCode();
 
             var bytes = await response.Content.ReadAsByteArrayAsync();
-            await File.WriteAllBytesAsync(audioFileName, bytes);
+            await File.WriteAllBytesAsync(audioFilePath, bytes);
 
-            var process = Process.Start(
-                "paplay",
-                $"-s tcp:127.0.0.1:{pulseAudioPort} {audioFileName}"
-            );
+            await PlayWavAudioFile(audioFilePath);
             
-            await process.WaitForExitAsync();
-            
-            File.Delete(audioFileName);
+            File.Delete(audioFilePath);
         });
     }
 }
