@@ -1,30 +1,60 @@
-﻿namespace MakiSLBot;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using static System.Threading.Tasks.Task;
+
+namespace MakiSLBot;
 
 internal sealed class Program
 {
    public static async Task Main(string[] args)
    {
       // https://medium.com/@rainer_8955/gracefully-shutdown-c-apps-2e9711215f6d
-      
-      var tcs = new TaskCompletionSource();
-      var sigintReceived = false;
-      
-      Console.CancelKeyPress += (_, ea) =>
-      {
-         ea.Cancel = true;
-         tcs.SetResult();
-         sigintReceived = true;
-      };
 
-      AppDomain.CurrentDomain.ProcessExit += (_, _) =>
-      {
-         if (!sigintReceived) tcs.SetResult();
-      };
-      
-      var makiSLBot = new MakiSLBot();
+      var host = new HostBuilder()
+         .ConfigureServices((hostContext, services) => services.AddHostedService<ProgramService>())
+         .UseConsoleLifetime()
+         .Build();
 
-      await tcs.Task;
+      await host.RunAsync();
+   }
+}
+
+internal class ProgramService : IHostedService
+{
+   private bool running;
+   private Task backgroundTask;
+   private MakiSLBot? makiSlBot;
+   private readonly IHostApplicationLifetime applicationLifetime;
+   
+   public ProgramService(IHostApplicationLifetime applicationLifetime)
+   {
+      this.applicationLifetime = applicationLifetime;
+   }
+   
+   public Task StartAsync(CancellationToken cancellationToken)
+   {
+      running = true;
       
-      makiSLBot.Cleanup();
+      backgroundTask = Run(async () =>
+      {
+         makiSlBot = new MakiSLBot();
+         while (running) await Delay(100, cancellationToken);
+      }, cancellationToken);
+      
+      return CompletedTask;
+   }
+
+   public async Task StopAsync(CancellationToken cancellationToken)
+   {
+      running = false;
+      await backgroundTask;
+      try
+      {
+         makiSlBot?.Cleanup();
+      }
+      catch (Exception)
+      {
+         // ignored
+      }
    }
 }

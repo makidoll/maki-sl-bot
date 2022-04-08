@@ -14,6 +14,7 @@
     <ItemGroup>
       <PackageReference Include="LibreMetaverse" Version="1.9.20.450" />
       <PackageReference Include="LibreMetaverse.Voice" Version="1.9.20.450" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
     </ItemGroup>
 
     <ItemGroup>
