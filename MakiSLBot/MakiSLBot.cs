@@ -39,7 +39,7 @@ public class MakiSLBot
         VoiceSession? session = sender as VoiceSession;
         
         voiceGateway.MicMute = false;
-        voiceGateway.MicLevel = 50;
+        voiceGateway.MicLevel = 25;
 
         voiceGateway.SpkrMute = true;
         voiceGateway.SpkrLevel = 0;

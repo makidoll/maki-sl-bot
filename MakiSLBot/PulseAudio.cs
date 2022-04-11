@@ -92,6 +92,8 @@ public class PulseAudio
                     return;
                 }
 
+                Console.WriteLine($"Started PulseAudio on PULSE_SERVER=tcp:127.0.0.1:{pulseAudioPort}");
+                
                 pulseAudioProcess.WaitForExit();
             }
         });
