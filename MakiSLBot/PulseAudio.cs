@@ -77,12 +77,19 @@ public class PulseAudio
                     $"-L \"module-native-protocol-tcp listen=127.0.0.1 port={pulseAudioPort}\"" // open tcp server
                 };
 
-                pulseAudioProcess = new Process();
-                pulseAudioProcess.StartInfo.FileName = "pulseaudio";
-                pulseAudioProcess.StartInfo.Arguments = string.Join(' ', args);
-                // hides messages to console
-                // pulseAudioProcess.StartInfo.RedirectStandardOutput = true;
-                // pulseAudioProcess.StartInfo.RedirectStandardError = true;
+                pulseAudioProcess = new Process
+                {
+                    StartInfo =
+                    {
+                        FileName = "pulseaudio",
+                        Arguments = string.Join(' ', args),
+                        // RedirectStandardInput = true,
+                        // RedirectStandardOutput = true,
+                        // RedirectStandardError = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        CreateNoWindow = true,
+                    }
+                };
 
                 var ok = pulseAudioProcess.Start();
 
@@ -132,21 +139,70 @@ public class PulseAudio
         if (File.Exists(slVoiceWrapperPath)) File.Delete(slVoiceWrapperPath);
     }
 
-    public async Task PlayWavAudioFile(string audioFilePath)
+    // public async Task PlayWavAudioFile(string audioFilePath)
+    // {
+    //     var process = Process.Start(
+    //         "paplay",
+    //         $"-s tcp:127.0.0.1:{pulseAudioPort} {audioFilePath.Replace(" ", "\\ ")}"
+    //     );
+    //     await process.WaitForExitAsync();
+    // }
+
+    private readonly IDictionary<string, string> whichCache = new Dictionary<string, string>();
+    private async Task<string> Which(string command)
     {
-        var process = Process.Start(
-            "paplay",
-            $"-s tcp:127.0.0.1:{pulseAudioPort} {audioFilePath}"
-        );
+        if (whichCache.TryGetValue(command, out var path)) return path;
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "which",
+            Arguments = command,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+            CreateNoWindow = true,
+        };
+        var process = Process.Start(startInfo);
+        if (process == null) return "";
         await process.WaitForExitAsync();
+        path = await process.StandardOutput.ReadLineAsync();
+        if (path == null) return "";
+        whichCache.Add(command, path);
+        return path;
+    }
+    
+    public async Task PlayAudioFile(byte[] audioFileBytes, int volume = 100)
+    {
+        Console.WriteLine(await Which("ffplay"));
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = await Which("ffplay"),
+            Arguments = $"-autoexit -nodisp -volume {volume} -",
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+            CreateNoWindow = true,
+            UseShellExecute = false, // necessary for stdin
+        };
+        startInfo.Environment.Add("PULSE_SERVER", $"tcp:127.0.0.1:{pulseAudioPort}");
+
+        var process = Process.Start(startInfo);
+        if (process == null) return;
+        
+        process.StandardInput.BaseStream.Write(audioFileBytes);
+        await process.StandardInput.BaseStream.FlushAsync();
+        process.StandardInput.BaseStream.Close();
+        
+        await process.WaitForExitAsync();
+        
+        var error = await process.StandardError.ReadToEndAsync();
+        if (error != "") Console.WriteLine(error);
     }
 
     public void TextToSpeech(string voice, string message)
     {
         Task.Run(async () =>
         {
-            var audioFilePath = Path.GetTempFileName();
-
             const string sayServer = "https://say.cutelab.space";
             var audioUrl = new Uri(
                 $"{sayServer}/sound.wav?voice={Uri.EscapeDataString(voice)}&text={Uri.EscapeDataString(message)}"
@@ -157,11 +213,7 @@ public class PulseAudio
             response.EnsureSuccessStatusCode();
 
             var bytes = await response.Content.ReadAsByteArrayAsync();
-            await File.WriteAllBytesAsync(audioFilePath, bytes);
-
-            await PlayWavAudioFile(audioFilePath);
-            
-            File.Delete(audioFilePath);
+            await PlayAudioFile(bytes, 40);
         });
     }
 }

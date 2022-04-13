@@ -36,7 +36,7 @@ WORKDIR /app
 
 RUN \
 apt-get update -y && \
-apt-get install -y wine pulseaudio pulseaudio-utils net-tools winetricks && \
+apt-get install -y wine pulseaudio pulseaudio-utils ffmpeg net-tools winetricks && \
 # run wine at least once so it doesnt have to on runtime (happens below)
 # wine64 regsvr32; exit 0 \
 # we need to install this or else SLVoice wont work. command fails but works anyway lol

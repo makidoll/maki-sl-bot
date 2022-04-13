@@ -40,7 +40,7 @@ public class MakiSLBot
         VoiceSession? session = sender as VoiceSession;
         
         voiceGateway.MicMute = false;
-        voiceGateway.MicLevel = 25;
+        voiceGateway.MicLevel = 45;
 
         voiceGateway.SpkrMute = true;
         voiceGateway.SpkrLevel = 0;
@@ -153,20 +153,23 @@ public class MakiSLBot
 
             var msgTrimmed = e.Message.Trim();
           
-            if (msgTrimmed == "/comehere")
-            {
-                client.Self.Chat("yay im coming", 0, ChatType.Normal);
-                WalkTowards(e.Position);
-            }
-            else if (msgTrimmed.StartsWith("/tts"))
+            if (msgTrimmed.StartsWith("/tts"))
             {
                 var message = Regex.Replace(msgTrimmed, @"^/tts ?", "");
                 pulseAudio.TextToSpeech("kathy", message);
             }
             else if (msgTrimmed.StartsWith("/play"))
             {
-                var audioFilePath = Regex.Replace(msgTrimmed, @"^/play ?", "");
-                await pulseAudio.PlayWavAudioFile(audioFilePath);
+                try
+                {
+                    var audioFilePath = Regex.Replace(msgTrimmed, @"^/play ?", "");
+                    var bytes = await File.ReadAllBytesAsync(audioFilePath);
+                    await pulseAudio.PlayAudioFile(bytes);
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(exception);
+                }
             }
         }
     }
