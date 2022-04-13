@@ -22,7 +22,7 @@ internal sealed class Program
 internal class ProgramService : IHostedService
 {
    private bool running;
-   private Task backgroundTask;
+   private Task? backgroundTask;
    private MakiSLBot? makiSlBot;
    private readonly IHostApplicationLifetime applicationLifetime;
    
@@ -47,7 +47,7 @@ internal class ProgramService : IHostedService
    public async Task StopAsync(CancellationToken cancellationToken)
    {
       running = false;
-      await backgroundTask;
+      if (backgroundTask != null) await backgroundTask;
       try
       {
          makiSlBot?.Cleanup();

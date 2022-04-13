@@ -1,5 +1,6 @@
 ﻿#define DEBUG
 
+using System.Drawing.Imaging;
 using System.Text.RegularExpressions;
 using LibreMetaverse.Voice;
 using OpenMetaverse;
@@ -65,19 +66,26 @@ public class MakiSLBot
         client.Settings.SEND_AGENT_UPDATES = true;
         
         client.Self.ChatFromSimulator += ChatFromSimulator;
+        client.Self.IM += IM;
         
         client.Network.EventQueueRunning += ClientOnEventQueueRunning;
 
-        var spawn = (Config.Get("SPAWN") ?? "").Split(' ');
-        var startLocation = spawn.Length >= 4 ? 
-            NetworkManager.StartLocation(spawn[0], int.Parse(spawn[1]), int.Parse(spawn[2]), int.Parse(spawn[3])) : 
-            NetworkManager.StartLocation("Helios", 0, 0, 0); 
+        var firstName = Config.Get("FIRST_NAME");
+        var lastName = Config.Get("LAST_NAME");
+        var password = Config.Get("PASSWORD");
+        const string channel = "ItsDotNetAlright";
+        const string version = "maki.cafe";
         
-        if (!client.Network.Login(
-            Config.Get("USERNAME"), "Resident", Config.Get("PASSWORD"),
-            "ItsDotNetAlright", startLocation, "maki.cafe")
-        )
-        {
+        var spawn = (Config.Get("SPAWN") ?? "").Split(' ');
+        var startLocation = spawn.Length >= 4
+            ? NetworkManager.StartLocation(spawn[0], int.Parse(spawn[1]), int.Parse(spawn[2]), int.Parse(spawn[3]))
+            : null;
+
+        var loginOk = startLocation != null
+            ? client.Network.Login(firstName, lastName, password, channel, startLocation, version)
+            : client.Network.Login(firstName, lastName, password, channel, version);
+
+        if (!loginOk) {
             throw new Exception("Failed to login: " + client.Network.LoginMessage);
         }
         
@@ -88,22 +96,28 @@ public class MakiSLBot
         var slVoiceDir = Config.Get("SL_VOICE_DIR");
         if (slVoiceDir == null)
         {
-            Console.WriteLine("SL_VOICE_DIR not provided, voice won't start");
-        }
-        else
-        {
-            pulseAudio = new PulseAudio(slVoiceDir);
-        
-            voiceGateway = new VoiceGateway(client);
-            voiceGateway.OnSessionCreate += VoiceGatewayOnSessionCreate;
-            voiceGateway.OnSessionRemove += VoiceGatewayOnSessionRemove;
-            voiceGateway.OnAuxGetCaptureDevicesResponse += VoiceGatewayOnAuxGetCaptureDevicesResponse;
-            voiceGateway.OnAuxGetRenderDevicesResponse += VoiceGatewayOnAuxGetRenderDevicesResponse;
-            voiceGateway.Start();
+            throw new Exception("SL_VOICE_DIR not provided");
         }
         
+        pulseAudio = new PulseAudio(slVoiceDir);
+    
+        voiceGateway = new VoiceGateway(client);
+        voiceGateway.OnSessionCreate += VoiceGatewayOnSessionCreate;
+        voiceGateway.OnSessionRemove += VoiceGatewayOnSessionRemove;
+        voiceGateway.OnAuxGetCaptureDevicesResponse += VoiceGatewayOnAuxGetCaptureDevicesResponse;
+        voiceGateway.OnAuxGetRenderDevicesResponse += VoiceGatewayOnAuxGetRenderDevicesResponse;
+        voiceGateway.Start();
     }
 
+    private void IM(object? sender, InstantMessageEventArgs e)
+    {
+        if (e.IM.FromAgentName != Config.Get("OWNER_NAME")) return;
+        if (e.IM.Dialog == InstantMessageDialog.RequestTeleport)
+        {
+            client.Self.TeleportLureRespond(e.IM.FromAgentID, e.IM.IMSessionID, true);
+        }
+    }
+    
     public void Cleanup()
     {
         Console.WriteLine("Shutting down and cleaning up...");
@@ -131,7 +145,7 @@ public class MakiSLBot
         client.Self.Movement.TurnToward(to);
     }
 
-    private void ChatFromSimulator(object? sender, ChatEventArgs e)
+    private async void ChatFromSimulator(object? sender, ChatEventArgs e)
     {
         if (e.AudibleLevel == ChatAudibleLevel.Fully && e.Type == ChatType.Normal)
         {
@@ -152,7 +166,7 @@ public class MakiSLBot
             else if (msgTrimmed.StartsWith("/play"))
             {
                 var audioFilePath = Regex.Replace(msgTrimmed, @"^/play ?", "");
-                pulseAudio.PlayWavAudioFile(audioFilePath);
+                await pulseAudio.PlayWavAudioFile(audioFilePath);
             }
         }
     }

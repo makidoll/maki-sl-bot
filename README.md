@@ -32,10 +32,12 @@ sudo apt-get install wine pulseaudio pulseaudio-utils net-tools
 Write a `.env` file next to the executable including:
 
 ```env
-USERNAME=
+FIRST_NAME=
+LAST_NAME=
 PASSWORD=
 SPAWN=name x y z
 SL_VOICE_DIR=
+OWNER_USERNAME=
 ```
 
 You might want to run `killall pulseaudio` every once in a while if it doesn't clean up properly.

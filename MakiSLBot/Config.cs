@@ -29,7 +29,7 @@ public class Config
                 {
                     var parts = line.Split('=', StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length != 2) continue;
-                    Environment.SetEnvironmentVariable(parts[0], parts[1]);
+                    Environment.SetEnvironmentVariable(parts[0].Trim(), parts[1].Trim());
                 } 
             }
         }

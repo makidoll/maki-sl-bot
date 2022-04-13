@@ -4,6 +4,8 @@ services:
     build: .
     restart: always
     environment:
-      - USERNAME=
+      - FIRST_NAME=
+      - LAST_NAME=
       - PASSWORD=
-      - SPAWN=name x y z
+      - SPAWN=name x y z # empty means last location
+      - OWNER_NAME=Maki Suki

@@ -7,11 +7,11 @@ namespace MakiSLBot;
 public class PulseAudio
 {
     private string slVoiceDir;
-    private string slVoiceWrapperPath;
+    private string? slVoiceWrapperPath;
     
     private int pulseAudioPort;
     private ManualResetEvent pulseAudioLoopSignal = new ManualResetEvent(false);
-    private Process pulseAudioProcess;
+    private Process? pulseAudioProcess;
 
     private static int GetAvailablePort()
     {
@@ -106,7 +106,7 @@ public class PulseAudio
         try
         {
             pulseAudioLoopSignal.Reset();
-            pulseAudioProcess.Kill();
+            pulseAudioProcess?.Kill();
         }
         catch (Exception)
         {
